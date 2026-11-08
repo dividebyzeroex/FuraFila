@@ -76,10 +76,9 @@ rascunho → triagem → coleta → aguardando_pagamento_taxa → preferencias
         → atendido | cancelado | expirado
 ```
 
-## Pendências a verificar nos sites oficiais
+## Resultado da verificação
 
-- Se cada sistema exige login gov.br, e de qual nível.
-- Regras de reagendamento: quantas trocas são permitidas e se a troca cancela a
-  vaga anterior antes de confirmar a nova.
-- CAPTCHA, limites de acesso e termos de uso sobre acesso automatizado.
-- Valores atuais das taxas e prazo de compensação.
+Ver [verificacao.md](verificacao.md). Em resumo: o passaporte não exige gov.br,
+mas tem CAPTCHA e permite só 2 trocas a cada 30 dias; o Poupatempo exige login
+gov.br. Isso bloqueia o monitoramento automático do modo caçador nos dois
+serviços, e o modelo do caçador precisa ser revisto.

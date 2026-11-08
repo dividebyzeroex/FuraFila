@@ -2,42 +2,71 @@ id: passaporte-comum
 nome: Passaporte comum
 esfera: federal
 orgao: Polícia Federal
-canal_oficial: https://www.gov.br/pf/pt-br/assuntos/passaporte  # a_verificar
-tier: A
-exige_login_govbr: a_verificar
+canal_oficial: https://www.gov.br/pf/pt-br/assuntos/passaporte
+verificado_em: 2026-11-08   # ver docs/verificacao.md
+tier: A                     # sem login gov.br, mas com CAPTCHA (ver abaixo)
+exige_login_govbr: false    # formulários do SINPA pedem CPF + data de nascimento
 
-# Ordem oficial: preencher requerimento → emitir GRU → pagar → agendar.
+sistema:
+  base: https://servicos.pf.gov.br/sinpa/
+  verificar_pagamento: recuperarProtocolo.do
+  agendar: paginaInicialAgendamento.do
+  reagendar: realizarReagendamento.do?dispatcher=exibirSolicitacaoReagendamento&validate=false
+  cancelar: realizarConsultaCancelamentoAgendamento.do?dispatcher=exibirConsultaCancelamentoAgendamento&validate=false
+  protecoes:
+    captcha: imagem (jcaptcha, com alternativa em áudio) no reagendamento
+    desafio_antibot: Cloudflare na página inicial de agendamento
+    # Não contornamos CAPTCHA nem desafio antibot. Quem resolve é o usuário.
+
+# Ordem oficial: preencher requerimento → pagar taxa → agendar → comparecer.
 etapas_oficiais:
-  - preencher_requerimento
-  - emitir_gru
+  - preencher_requerimento     # até ~10 min; gera a taxa ao final
+  - pagar_taxa
   - aguardar_compensacao
   - agendar_atendimento
+  - comparecer                 # coleta de biometria
+  - acompanhar_andamento       # 6 a 10 dias úteis
+  - retirar                    # mesmo posto; até 90 dias corridos ou é cancelado
 
 triagem:
   - id: situacao
     pergunta: Qual é a sua situação?
     opcoes:
       primeira_via: Nunca tive passaporte
-      renovacao: Tenho passaporte (válido ou vencido)
-      perda_roubo: Meu passaporte foi perdido, roubado ou danificado
+      renovacao: Tenho passaporte (válido ou vencido) em mãos
+      furto_roubo: Meu passaporte foi furtado ou roubado (tenho boletim de ocorrência)
+      perda_dano: Meu passaporte válido foi perdido, extraviado ou danificado
   - id: menor_de_idade
     pergunta: O passaporte é para alguém menor de 18 anos?
     tipo: sim_nao
   - id: urgencia
     pergunta: A viagem é urgente demais para esperar o prazo normal de emissão?
     tipo: sim_nao
-    se_sim: avaliar passaporte de emergência (exige comprovação da urgência)
+    se_sim: passaporte de urgência/emergência (taxa adicional gerada no atendimento)
 
 variantes:
   primeira_via:
-    documentos_extra: [certidao_nascimento_ou_casamento]
+    documentos_extra: [certidoes_alteracao_nome_se_houver]
   renovacao:
     documentos_extra: [passaporte_anterior]
-  perda_roubo:
+    observacao: passaporte anterior válido é cancelado no atendimento; vistos continuam válidos
+  furto_roubo:
     documentos_extra: [boletim_ocorrencia]
+    taxa: comum
+  perda_dano:
+    documentos_extra: [comunicacao_ocorrencia_pf_impressa]
+    taxa: comum_mais_adicional
   menor_de_idade:
-    documentos_extra: [certidao_nascimento, documentos_dos_responsaveis]
-    observacao: presença dos responsáveis ou autorização com firma reconhecida  # a_verificar
+    documentos_extra:
+      - documento_e_cpf_do_menor
+      - documento_de_quem_acompanha
+      - autorizacao_genitores    # Formulário Simples tipo 1, 2 ou 3; ver regras abaixo
+      - foto_5x7_fundo_branco    # só para menores de 5 anos
+    regras:
+      - Ambos os genitores presentes assinam no atendimento.
+      - Genitor ausente exige firma reconhecida ou procuração, lavrada há menos de 1 ano.
+      - Menor de 16 anos deve estar acompanhado por um dos pais ou responsável legal.
+      - O tipo de autorização de viagem impressa não pode ser alterado depois.
 
 campos:
   - {id: nome_completo, rotulo: Nome completo, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
@@ -47,32 +76,52 @@ campos:
   - {id: nome_mae, rotulo: Nome da mãe, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
   - {id: nome_pai, rotulo: Nome do pai, tipo: texto, obrigatorio: false, origem_ocr: documento_identidade}
   - {id: naturalidade, rotulo: Cidade e UF de nascimento, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
-  - {id: rg_numero, rotulo: Número do documento de identidade, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
-  - {id: titulo_eleitor, rotulo: Título de eleitor, tipo: texto, obrigatorio: condicional, condicao: idade entre 18 e 70}
+  - {id: documento_identidade, rotulo: Documento de identificação, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
   - {id: passaporte_anterior, rotulo: Número do passaporte anterior, tipo: texto, obrigatorio: condicional, condicao: variante renovacao, origem_ocr: passaporte}
   - {id: endereco, rotulo: Endereço, tipo: endereco, obrigatorio: true}
   - {id: email, rotulo: E-mail, tipo: email, obrigatorio: true}
   - {id: celular, rotulo: Celular, tipo: telefone, obrigatorio: true}
+  - {id: protocolo, rotulo: Protocolo do requerimento, tipo: texto, obrigatorio: true, origem: gerado_no_requerimento}
+
+documentos_aceitos_identificacao:
+  # Originais apenas. Precisam conter nome, data e cidade de nascimento e filiação.
+  - RG estadual, militar ou de conselho profissional (OAB, CRM, CREA...)
+  - CNH (mesmo vencida, se tiver local de nascimento ou vier com outro documento)
+  - Passaporte brasileiro (mesmo vencido)
+  - Carteira de trabalho (CTPS)
+  - Carteira funcional reconhecida por lei federal
+  - Documento digital com validação (CNH digital, Carteira de Identidade Digital)
+  - Certidão de nascimento (só menores de 12 anos)
+  # Recusados: protocolos, boletins de ocorrência, documentos rasurados.
 
 documentos_atendimento:
-  - Documento de identidade original
-  - Comprovante de pagamento da GRU
-  - Protocolo do requerimento
-  - Título de eleitor e comprovante de quitação eleitoral (18 a 70 anos)
-  - Certificado de reservista (homens de 19 a 45 anos)  # a_verificar
-  - Documentos extras da variante (ver acima)
+  - Documento de identificação original (lista acima)
+  - CPF regular (o número pode constar no documento de identificação)
+  - Certidões de alteração de nome, se o nome mudou desde o último passaporte
+  - Documentos extras da variante
+  - Comprovante eleitoral só se houver pendência (a PF consulta o TSE e avisa no agendamento)
+  - Documento militar só se houver alerta (homens com 19 a 45 anos em 31/12 do ano)
 
 taxa:
-  valor: a_verificar        # de memória: R$ 257,25 (passaporte comum)
-  forma: GRU
-  prazo_compensacao: a_verificar   # estimativa: até 1 dia útil
+  comum: 257.25
+  urgencia_emergencia_total: 334.42     # adicional de 77,17 gerado no atendimento
+  perda_extravio_total: 514.50          # adicional de 257,25 gerado no atendimento
+  forma: [PagTesouro (Pix, cartão), boleto GRU, DDA]
+  agendamento_liberado_apos:
+    pix: imediato após a compensação
+    boleto: 72 horas úteis
+  validade: 5 anos a partir do pagamento
 
 reagendamento:
-  permitido: a_verificar
-  limite_trocas: a_verificar
-  cancela_anterior: a_verificar    # crítico para o modo caçador
+  permitido: true
+  limite_trocas: 2 a cada 30 dias
+  agendamentos_simultaneos_por_cpf: 1   # novo agendamento exige cancelar o anterior
+  troca_atomica: a_verificar            # o fluxo "Reagendar" troca sem cancelar antes? testar com protocolo real
+  atraso: a_verificar                   # FAQ indica atendimento após o atendimento em curso
 
 cacador:
-  disponivel: true
-  intervalo_minimo_segundos: a_verificar
-  captcha: a_verificar
+  disponivel: restrito
+  motivo: >
+    Consultar vagas exige passar por CAPTCHA e desafio antibot. Não contornamos
+    essas proteções, então a busca automática não é viável. Ver docs/verificacao.md.
+  limite_trocas_impacta: true   # no máximo 2 trocas a cada 30 dias

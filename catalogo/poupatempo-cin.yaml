@@ -1,35 +1,61 @@
 id: poupatempo-cin
-nome: Carteira de Identidade Nacional (RG) — Poupatempo SP
+nome: Carteira de Identidade Nacional (CIN) — Poupatempo SP
 esfera: estadual
 uf: SP
-orgao: Poupatempo / Instituto de Identificação (IIRGD)
-canal_oficial: https://www.poupatempo.sp.gov.br  # a_verificar
-tier: a_verificar          # A ou B, conforme exigência de login
-exige_login_govbr: a_verificar
+orgao: Poupatempo / Instituto de Identificação
+canal_oficial:
+  primeira_via: https://www.poupatempo.sp.gov.br/carta/D97C3844-A2D9-4C9E-B364-CB4FEB26A1FB
+  segunda_via: https://www.poupatempo.sp.gov.br/carta/4FC0FEE9-9E3F-4220-8A73-9C49BFDD7288
+verificado_em: 2026-11-08   # ver docs/verificacao.md
+tier: B
+exige_login_govbr: true     # sistema de agendamento responde "acesso negado" sem sessão; portal usa "Entrar com o gov.br"
+nivel_govbr: a_verificar
+
+sistema:
+  agendar: https://operacoes.sp.gov.br/OperacoesWeb/redirectAgendarServico   # parâmetro tipoServico=155 (CIN)
+  outros_canais: [app Poupatempo SP.GOV.BR, WhatsApp oficial, totens]
+  regras: agendamento obrigatório, pessoal e intransferível; cancelar se não puder comparecer
+  captcha: a_verificar   # não observado; fica atrás do login
 
 triagem:
   - id: situacao
-    pergunta: É a primeira via ou a segunda via da identidade?
+    pergunta: É a primeira CIN ou a segunda via?
     opcoes:
-      primeira_via: Primeira via (ou primeira CIN)
-      segunda_via: Segunda via
+      primeira_via: Primeira CIN (gratuita)
+      segunda_via: Segunda via (paga)
   - id: menor_de_idade
     pergunta: A identidade é para alguém menor de 18 anos?
     tipo: sim_nao
+  - id: viagem_mercosul
+    pergunta: Vai usar a identidade para viajar ao Mercosul nos próximos 26 dias úteis?
+    tipo: sim_nao
+    se_sim: não pedir a CIN agora; orientar a identidade provisória para viagem
+  - id: nascimento
+    pergunta: Você nasceu no Brasil, no exterior (filho de brasileiro) ou é naturalizado?
+    opcoes:
+      brasil: Nasci no Brasil
+      exterior: Nasci no exterior
+      naturalizado: Sou naturalizado
 
 variantes:
   primeira_via:
-    documentos_extra: [certidao_nascimento_ou_casamento]
+    taxa: 0
   segunda_via:
-    documentos_extra: [certidao_nascimento_ou_casamento]
+    taxa: 57.63
   menor_de_idade:
-    documentos_extra: [documento_do_responsavel]
-    observacao: presença de um responsável legal  # a_verificar
+    documentos_extra: [documento_e_cpf_do_responsavel]
+    regras:
+      - Menor de 16 anos vai acompanhado do responsável legal ou leva autorização assinada por ele.
+  exterior:
+    documentos_extra: [certidao_brasileiro_nato_ou_pendente_de_opcao]   # "pendente de opção" só para menores de 18
+  naturalizado:
+    documentos_extra: [certificado_naturalizacao_ou_portaria_dou]
 
 campos:
-  - {id: nome_completo, rotulo: Nome completo, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
-  - {id: cpf, rotulo: CPF, tipo: cpf, obrigatorio: true, origem_ocr: documento_identidade}
-  - {id: data_nascimento, rotulo: Data de nascimento, tipo: data, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: nome_completo, rotulo: Nome completo, tipo: texto, obrigatorio: true, origem_ocr: certidao}
+  - {id: cpf, rotulo: CPF, tipo: cpf, obrigatorio: true}
+  - {id: data_nascimento, rotulo: Data de nascimento, tipo: data, obrigatorio: true, origem_ocr: certidao}
+  - {id: estado_civil, rotulo: Estado civil, tipo: opcao, obrigatorio: true}
   - {id: email, rotulo: E-mail, tipo: email, obrigatorio: true}
   - {id: celular, rotulo: Celular, tipo: telefone, obrigatorio: true}
 
@@ -38,28 +64,33 @@ preferencias:
   - {id: janelas, rotulo: Dias e horários disponíveis, tipo: janelas_horario}
 
 documentos_atendimento:
-  - Certidão de nascimento ou casamento original
-  - CPF (se não constar em outro documento)
-  - Comprovante de pagamento da taxa (segunda via)  # a_verificar
-  - Comprovante de residência  # a_verificar
+  - "Certidão do estado civil atual, original ou digital validável, mais uma cópia simples (solteiro: nascimento; casado, separado, divorciado ou viúvo: casamento com averbação)"
+  - Número do CPF
+  - "Opcional, acelera a emissão: RG de outro estado, CNH, carteira de trabalho, certificado militar, título de eleitor"
+  - "Não aceitos: certidões plastificadas, rasuradas ou rasgadas"
 
 taxa:
-  primeira_via: a_verificar   # de memória: gratuita
-  segunda_via: a_verificar
-  forma: a_verificar
+  primeira_via: 0
+  segunda_via: 57.63
+  entrega_correios_opcional: 9.09
+  forma: [Pix, cartão de débito]
+  isencoes: [idade, desemprego, hipossuficiência declarada, erro de emissão, calamidade natural]
+
+prazos:
+  atendimento: ~15 minutos
+  emissao: até 26 dias úteis
+  retirada: no posto do pedido; com o protocolo, qualquer pessoa pode retirar
 
 reagendamento:
-  permitido: a_verificar
+  permitido: a_verificar   # cancelamento existe ("Meus agendamentos"); reagendamento direto não confirmado
   limite_trocas: a_verificar
-  cancela_anterior: a_verificar
+  troca_atomica: a_verificar
+  falta_penalidade: a_verificar
 
 cacador:
-  disponivel: true
-  intervalo_minimo_segundos: a_verificar
-  captcha: a_verificar
+  disponivel: a_verificar
+  motivo: consultar vagas exige sessão gov.br do usuário; ver docs/verificacao.md
 
-# Outros serviços do Poupatempo a catalogar. Vários já são 100% online e
-# devem ser oferecidos como "faça online" em vez de atendimento presencial.
 proximos:
   - {id: poupatempo-cnh-renovacao, online: a_verificar}
   - {id: poupatempo-antecedentes, online: a_verificar}
