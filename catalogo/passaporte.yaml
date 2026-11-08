@@ -1,0 +1,78 @@
+id: passaporte-comum
+nome: Passaporte comum
+esfera: federal
+orgao: Polícia Federal
+canal_oficial: https://www.gov.br/pf/pt-br/assuntos/passaporte  # a_verificar
+tier: A
+exige_login_govbr: a_verificar
+
+# Ordem oficial: preencher requerimento → emitir GRU → pagar → agendar.
+etapas_oficiais:
+  - preencher_requerimento
+  - emitir_gru
+  - aguardar_compensacao
+  - agendar_atendimento
+
+triagem:
+  - id: situacao
+    pergunta: Qual é a sua situação?
+    opcoes:
+      primeira_via: Nunca tive passaporte
+      renovacao: Tenho passaporte (válido ou vencido)
+      perda_roubo: Meu passaporte foi perdido, roubado ou danificado
+  - id: menor_de_idade
+    pergunta: O passaporte é para alguém menor de 18 anos?
+    tipo: sim_nao
+  - id: urgencia
+    pergunta: A viagem é urgente demais para esperar o prazo normal de emissão?
+    tipo: sim_nao
+    se_sim: avaliar passaporte de emergência (exige comprovação da urgência)
+
+variantes:
+  primeira_via:
+    documentos_extra: [certidao_nascimento_ou_casamento]
+  renovacao:
+    documentos_extra: [passaporte_anterior]
+  perda_roubo:
+    documentos_extra: [boletim_ocorrencia]
+  menor_de_idade:
+    documentos_extra: [certidao_nascimento, documentos_dos_responsaveis]
+    observacao: presença dos responsáveis ou autorização com firma reconhecida  # a_verificar
+
+campos:
+  - {id: nome_completo, rotulo: Nome completo, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: data_nascimento, rotulo: Data de nascimento, tipo: data, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: cpf, rotulo: CPF, tipo: cpf, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: sexo, rotulo: Sexo, tipo: opcao, obrigatorio: true}
+  - {id: nome_mae, rotulo: Nome da mãe, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: nome_pai, rotulo: Nome do pai, tipo: texto, obrigatorio: false, origem_ocr: documento_identidade}
+  - {id: naturalidade, rotulo: Cidade e UF de nascimento, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: rg_numero, rotulo: Número do documento de identidade, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: titulo_eleitor, rotulo: Título de eleitor, tipo: texto, obrigatorio: condicional, condicao: idade entre 18 e 70}
+  - {id: passaporte_anterior, rotulo: Número do passaporte anterior, tipo: texto, obrigatorio: condicional, condicao: variante renovacao, origem_ocr: passaporte}
+  - {id: endereco, rotulo: Endereço, tipo: endereco, obrigatorio: true}
+  - {id: email, rotulo: E-mail, tipo: email, obrigatorio: true}
+  - {id: celular, rotulo: Celular, tipo: telefone, obrigatorio: true}
+
+documentos_atendimento:
+  - Documento de identidade original
+  - Comprovante de pagamento da GRU
+  - Protocolo do requerimento
+  - Título de eleitor e comprovante de quitação eleitoral (18 a 70 anos)
+  - Certificado de reservista (homens de 19 a 45 anos)  # a_verificar
+  - Documentos extras da variante (ver acima)
+
+taxa:
+  valor: a_verificar        # de memória: R$ 257,25 (passaporte comum)
+  forma: GRU
+  prazo_compensacao: a_verificar   # estimativa: até 1 dia útil
+
+reagendamento:
+  permitido: a_verificar
+  limite_trocas: a_verificar
+  cancela_anterior: a_verificar    # crítico para o modo caçador
+
+cacador:
+  disponivel: true
+  intervalo_minimo_segundos: a_verificar
+  captcha: a_verificar

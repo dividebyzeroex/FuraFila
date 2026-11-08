@@ -1,0 +1,66 @@
+id: poupatempo-cin
+nome: Carteira de Identidade Nacional (RG) — Poupatempo SP
+esfera: estadual
+uf: SP
+orgao: Poupatempo / Instituto de Identificação (IIRGD)
+canal_oficial: https://www.poupatempo.sp.gov.br  # a_verificar
+tier: a_verificar          # A ou B, conforme exigência de login
+exige_login_govbr: a_verificar
+
+triagem:
+  - id: situacao
+    pergunta: É a primeira via ou a segunda via da identidade?
+    opcoes:
+      primeira_via: Primeira via (ou primeira CIN)
+      segunda_via: Segunda via
+  - id: menor_de_idade
+    pergunta: A identidade é para alguém menor de 18 anos?
+    tipo: sim_nao
+
+variantes:
+  primeira_via:
+    documentos_extra: [certidao_nascimento_ou_casamento]
+  segunda_via:
+    documentos_extra: [certidao_nascimento_ou_casamento]
+  menor_de_idade:
+    documentos_extra: [documento_do_responsavel]
+    observacao: presença de um responsável legal  # a_verificar
+
+campos:
+  - {id: nome_completo, rotulo: Nome completo, tipo: texto, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: cpf, rotulo: CPF, tipo: cpf, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: data_nascimento, rotulo: Data de nascimento, tipo: data, obrigatorio: true, origem_ocr: documento_identidade}
+  - {id: email, rotulo: E-mail, tipo: email, obrigatorio: true}
+  - {id: celular, rotulo: Celular, tipo: telefone, obrigatorio: true}
+
+preferencias:
+  - {id: unidades, rotulo: Unidades Poupatempo aceitas, tipo: lista_unidades}
+  - {id: janelas, rotulo: Dias e horários disponíveis, tipo: janelas_horario}
+
+documentos_atendimento:
+  - Certidão de nascimento ou casamento original
+  - CPF (se não constar em outro documento)
+  - Comprovante de pagamento da taxa (segunda via)  # a_verificar
+  - Comprovante de residência  # a_verificar
+
+taxa:
+  primeira_via: a_verificar   # de memória: gratuita
+  segunda_via: a_verificar
+  forma: a_verificar
+
+reagendamento:
+  permitido: a_verificar
+  limite_trocas: a_verificar
+  cancela_anterior: a_verificar
+
+cacador:
+  disponivel: true
+  intervalo_minimo_segundos: a_verificar
+  captcha: a_verificar
+
+# Outros serviços do Poupatempo a catalogar. Vários já são 100% online e
+# devem ser oferecidos como "faça online" em vez de atendimento presencial.
+proximos:
+  - {id: poupatempo-cnh-renovacao, online: a_verificar}
+  - {id: poupatempo-antecedentes, online: a_verificar}
+  - {id: poupatempo-carteira-trabalho, online: a_verificar}
